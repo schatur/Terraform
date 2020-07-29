@@ -1,0 +1,180 @@
+Adding Maps and Lookups in your Terraform files
+The lab files can be found @ https://github.com/satyensingh/terraform-assignment-resources.git
+In the repo you will find main.tf, outputs.tf, and variables.tf.
+Add a new variable called env. Set a description to “env: dev or prod”.
+Convert the type from image_name to map.
+
+Change the default to use key/value pairs. Set dev to ghost:latest and prod to ghost:alpine.
+
+Convert container_name to a map. Change the default to use key/value pairs. Set dev to blog_dev and prod to blog_prod.
+
+Convert ext_port to a map. Change the default to use key/value pairs. Set dev to 8080 and prod to 80.
+
+Now initialize Terraform.
+
+Setup the Development environment
+Create a workspace called dev.
+Generate a Terraform plan. Output the plan and call it tfdev_plan. Pass in a variable called env and set it to dev.
+Apply tfdev_plan.
+
+Setup the Production environment
+Create a workspace called prod.
+Generate a Terraform plan. Output the plan and call it tfprod_plan. Pass in a variable called env and set it to prod.
+Apply tfprod_plan.
+
+Verify both environments work
+Open a browser and navigate to the public IP. This should pull up the production environment.
+Open a browser tab and navigate to the public IP on port 8080. This should pull up the development environment.
+
+
+
+vi main.tf
+
+# Download the latest Ghost Image
+resource "docker_image" "image_id" {
+  name = "${lookup(var.image_name, var.env)}"
+}
+
+# Start the Container
+resource "docker_container" "container_id" {
+  name  = "${lookup(var.container_name, var.env)}"
+  image = "${docker_image.image_id.name}"
+  ports {
+    internal = "2368"
+    external = "${lookup(var.ext_port,var.env)}"
+  }
+}
+
+
+
+vi outputs.tf
+
+#Output the IP Address of the Container
+output "ip_address" {
+  value       = "${docker_container.container_id.ip_address}"
+  description = "The IP for the container."
+}
+
+output "container_name" {
+  value       = "${docker_container.container_id.name}"
+  description = "The name of the container."
+}
+
+
+
+vi variables.tf
+
+#Define variables
+
+variable "env" {
+  description = "env: dev or prod"
+}  
+
+variable "image_name" {
+  description = "Image for container based on env."
+  type = "map"
+  default = {
+     dev= "ghost:latest"
+     prod= "ghost:alpine"
+   }
+}
+
+variable "container_name" {
+  description = "Name of the container based on env."
+  type = "map"
+  default  = {
+    dev= "blog_dev"
+    prod="blog_prod"   
+  }
+}
+
+variable "ext_port" {
+  description = "External port for container."
+  type = "map"
+  default  = {
+    prod = "8083"
+    dev = "8084"
+  }
+}
+
+$ terraform init
+
+Initializing the backend...
+
+Initializing provider plugins...
+
+
+
+$ terraform workspace new dev
+Created and switched to workspace "dev"!
+
+
+
+$ terraform plan -out tfdev_plan -var env=dev
+Refreshing Terraform state in-memory prior to plan...
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+ 
+
+$  terraform apply "tfdev_plan"
+docker_image.image_id: Creating...
+docker_image.image_id: Creation complete after 0s [id=sha256:52972da38a93b1f507be32c4bb2291b204c2995cb55e939015d84d406cb40b00ghost:latest]
+docker_container.container_id: Creating...
+docker_container.container_id: Creation complete after 5s [id=cd2584384d56d98d73d52755230c7d2023360f87052a3137456349427eaa21b7]
+
+State path: terraform.tfstate
+
+Outputs:
+
+container_name = blog_dev
+ip_address = 172.17.0.8
+
+
+
+$ terraform workspace new prod
+Created and switched to workspace "prod"!
+
+
+
+$ terraform plan -out tfprod_plan -var env=prod
+Refreshing Terraform state in-memory prior to plan...
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+This plan was saved to: tfprod_plan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfprod_plan"
+
+
+
+$ terraform apply "tfprod_plan"
+docker_image.image_id: Creating...
+docker_image.image_id: Still creating... [10s elapsed]
+docker_image.image_id: Still creating... [20s elapsed]
+docker_image.image_id: Still creating... [30s elapsed]
+docker_image.image_id: Creation complete after 35s [id=sha256:0125f6aa38ddbbc18c79fd78add1f4996dc16700f09805bbf8e04b5ec9c25b6dghost:alpine]
+docker_container.container_id: Creating...
+docker_container.container_id: Still creating... [10s elapsed]
+docker_container.container_id: Still creating... [20s elapsed]
+docker_container.container_id: Creation complete after 25s [id=790bb83df6fa903d5ecc2181b4b90ccb74dd85b97fd89050e127987530328866]
+
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+State path: terraform.tfstate
+
+Outputs:
+
+container_name = blog_prod
+ip_address = 172.17.0.8
+
+
+$ docker ps 
+CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS              PORTS                    NAMES
+790bb83df6fa        0125f6aa38dd        "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:8083->2368/tcp   blog_prod
+cd2584384d56        52972da38a93        "docker-entrypoint.s…"   11 minutes ago       Up 11 minutes       0.0.0.0:8084->2368/tcp   blog_dev
+
+
+

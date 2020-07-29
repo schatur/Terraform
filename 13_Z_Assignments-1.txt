@@ -1,0 +1,170 @@
+Create Ghost module
+Create a directory called ghost.
+Your modules will be made up of three files: main.tf, variables.tf and outputs.tf.
+
+main.tf
+In main.tf you will deploy out two resources docker_image and docker_container. The docker_image resource name will be ghost_image.
+The name will use th image_name variable.
+The docker_container resource name will be ghost_container.
+The name will be set using a varialbe called container_name. The image will be set usingdocker_image.ghost_image.latest. Set the external port to use the ext_port variable.
+
+variables.tf
+In variables.tf create three varialbes: image_name, container_name and ext_port.
+
+outputs.tf
+In outputs.tf create two outputs: ip and container_name. The ip output the ghost_container's ip_address attribute.
+The container_name output the ghost_container's name attribute.
+
+Create root module
+main.tf
+In cloud_user directory create main.tf, variables.tf and outputs.tf. In main.tf will use the ghost module.
+Set image_name using a variable called image_name.
+Set container_name using a variable called container_name.
+Set ext_port using a variable called ext_port.
+In variables.tf create three image_name, container_name and ext_port.
+
+variables.tf
+The image_name will have a default value of ghost:latest with a description of Image for container.
+The container_name will have a default value of blogwith a description ofName of the container.  
+Theext_portwill have adefaultvalue of 80 with a description of External port for container.
+
+outputs.tf
+In outputs.tf create two outputs: ip and container_name. The ip output the ghost_container's ip_address attribute.
+The container_name output the ghost_container's name attribute.
+
+Deploy the infrastructure
+Initialize Terraform.
+Generate a Terraform plan and output a plan file.
+Deploy the infrastr
+
+mkdir ghost
+cd ghost
+
+vi main.tf
+
+provider "docker" {
+
+}
+resource "docker_image" "ghost_image" {
+
+  name = "${var.image_name}"
+
+}
+resource "docker_container" "ghost_container" {
+  name  = "${var.container_name}"
+  image = "${docker_image.ghost_image.name}"
+  ports {
+    internal = "2368"
+    external = "${var.ext_port}"
+  }
+
+}
+
+vi variables.tf
+
+
+
+variable "container_name" {
+  default = "ghost_container"
+}
+variable "ext_port" {
+  default = "8086"
+}
+
+variable "image_name" {
+  description = "Image name of the  container"
+  default = "ghost:latest"
+}
+
+
+
+vi outputs.tf 
+
+output "ip" {
+  description = "The IP for the container."
+  value       = "${docker_container.ghost_container.ip_address}"
+}
+
+
+output "container_name" {
+  description = "The name of the container."
+  value       = "${docker_container.ghost_container.name}"
+}
+	
+
+$ terraform init
+
+
+$ terraform validate
+
+Success! The configuration is valid, but there were some validation warnings as shown above.
+
+$ terraform plan -out ghost_tfplan
+Refreshing Terraform state in-memory prior to plan...
+The refreshed state will be used to calculate this plan, but will not be
+persisted to local or remote state storage.
+
+docker_image.ghost_image: Refreshing state... [id=sha256:52972da38a93b1f507be32c4bb2291b204c2995cb55e939015d84d406cb40b00ghost]
+docker_container.container_id: Refreshing state... [id=5a3191ba89430772fbc992f49e775a950856c81ba981cb33db2606fba6162879]
+
+Plan: 1 to add, 1 to change, 0 to destroy.
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "ghost_tfplan"
+
+
+
+$ terraform apply "ghost_tfplan"
+docker_image.ghost_image: Modifying... [id=sha256:52972da38a93b1f507be32c4bb2291b204c2995cb55e939015d84d406cb40b00ghost]
+docker_image.ghost_image: Modifications complete after 0s [id=sha256:52972da38a93b1f507be32c4bb2291b204c2995cb55e939015d84d406cb40b00ghost:latest]
+docker_container.ghost_container: Creating...
+docker_container.ghost_container: Creation complete after 5s [id=13953e7314e8f5028973b19aa8bd9d0596fcafdd62e2f7ce061d37a158196de0]
+
+Outputs:
+
+container_name = ghost_container
+ip = 172.17.0.2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

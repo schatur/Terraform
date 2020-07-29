@@ -1,0 +1,108 @@
+Create a new Terraform file called main.tf.
+Create three variables.
+The first variable, called image_name, needs to be set to ghost:latest.
+The second variable is called container_name with a default of ghost_blog.
+The final variable is called ext_port and set the default to port 80.
+
+Create a Docker image resource called ghost_image that uses the image_name variable.
+
+Create a Docker container resource called ghost_container.
+The name will use the container_name variable.
+The image will use the ghost_image resource.
+The internal port will be set to 2368.
+The external port will use ext_port variable.
+
+Initialize Terraform.
+
+Create a Terraform plan that uses the following variables:
+
+container_name = ghost_blog1
+image_name = ghost:alpine
+ext_port = 8080
+Output the plan to a file called tfplan.
+
+Then apply the plan using tfplan and make sure that the apply doesn’t prompt for input.
+
+
+
+vi main.tf
+
+
+
+variable "image_name" {
+  default = "ghost:latest"
+}
+
+variable "container_name" {
+  default = "ghost_blog"
+}
+
+variable "ext_port" {
+  default = 8001
+}
+
+
+ PROVIDER
+provider "docker" {
+}
+
+
+
+resource "docker_image" "ghost_image " {
+  name = "${var.image_name}"
+}
+
+resource "docker_container" "container_id" {
+  name   = "var.container_name"
+  image  = "${docker_image.ghost_image.name}"
+  ports   {
+    internal = "2368"
+    external = "${var.ext_port}"
+  }
+}
+
+$ terraform init
+
+Initializing the backend...
+
+Initializing provider plugins...
+
+
+$ terraform plan -out tfplan
+Refreshing Terraform state in-memory prior to plan...
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+
+
+docker_image.image_id: Creating...
+docker_image.image_id: Still creating... [10s elapsed]
+docker_image.image_id: Still creating... [20s elapsed]
+docker_image.image_id: Still creating... [30s elapsed]
+docker_image.image_id: Creation complete after 30s [id=sha256:52972da38a93b1f507be32c4bb2291b204c2995cb55e939015d84d406cb40b00ghost:latest]
+docker_container.container_id: Creating...
+docker_container.container_id: Still creating... [10s elapsed]
+docker_container.container_id: Still creating... [20s elapsed]
+docker_container.container_id: Still creating... [30s elapsed]
+docker_container.container_id: Creation complete after 30s [id=8d92996e8dd8e68e81a39906007c2916409d3c9d17d451f7a59ab8c757591021]
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+
+
+
+$ docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
+8d92996e8dd8        52972da38a93        "docker-entrypoint.s…"   11 minutes ago      Up 11 minutes       0.0.0.0:8001->2368/tcp   var.container_name
+
+
+
+$ curl localhost:8001
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+
+
