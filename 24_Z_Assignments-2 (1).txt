@@ -1,0 +1,172 @@
+Using Join and Count to Create Multiple S3 Buckets
+
+Find three files as below:-
+
+main.tf :-
+---------
+provider "aws" {
+  region = "${var.aws_region}"
+}
+
+resource "random_id" "tf_bucket_id" {
+  byte_length = 2
+}
+
+resource "aws_s3_bucket" "tf_code" {
+    bucket        = "${var.project_name}-${random_id.tf_bucket_id.dec}"
+    acl           = "private"
+
+    force_destroy =  true
+
+    tags {
+      Name = "tf_bucket"
+    }
+}
+
+
+variables.tf:-
+--------------
+variable "aws_region" {
+  default = "us-east-1"
+}
+
+variable "project_name" {
+  default = "la-terraform"
+}
+
+
+vi main.tf
+
+provider "aws" {
+
+  region     = "${var.aws_region}"
+  access_key = "${var.access_key}"
+  secret_key = "${var.secret_key}"
+
+}
+
+resource "random_id" "tf_bucket_id" {
+  byte_length = 2
+  count       = "${var.number_of_instances}"
+}
+
+resource "aws_s3_bucket" "tf_code" {
+  count = "${var.number_of_instances}"
+
+  bucket        = "${var.project_name}-${random_id.tf_bucket_id.*.dec[count.index]}"
+  acl           = "private"
+  force_destroy = "true"
+  tags = {
+    name = "tf_bucket${count.index + 1}"
+  }
+}
+
+
+
+vi variables.tf
+
+variable "aws_region" {
+  default = "us-east-1"
+}
+
+variable "project_name" {
+  default = "la-terraform"
+}
+
+
+variable "access_key" {
+  default = ""
+}
+
+variable "secret_key" {
+  default = ""
+}
+
+variable "number_of_instances" {
+
+  default = "2"
+}
+
+
+
+vi output.tf
+
+output "bucketname" {
+  value = "${aws_s3_bucket.tf_code.*.id}"
+}
+
+
+
+
+$ terraform init
+
+$ terraform validate
+Success! The configuration is valid, but there were some validation warnings as shown above.
+
+
+
+$ terraform plan -out tfplan
+
+Plan: 4 to add, 0 to change, 0 to destroy.
+
+This plan was saved to: tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfplan"
+
+
+
+$  terraform apply "tfplan"
+random_id.tf_bucket_id[0]: Creating...
+random_id.tf_bucket_id[1]: Creating...
+random_id.tf_bucket_id[1]: Creation complete after 0s [id=2LM]
+random_id.tf_bucket_id[0]: Creation complete after 0s [id=dmM]
+aws_s3_bucket.tf_code[1]: Creating...
+aws_s3_bucket.tf_code[0]: Creating...
+aws_s3_bucket.tf_code[0]: Still creating... [10s elapsed]
+aws_s3_bucket.tf_code[1]: Still creating... [10s elapsed]
+aws_s3_bucket.tf_code[0]: Creation complete after 15s [id=la-terraform-30307]
+aws_s3_bucket.tf_code[1]: Creation complete after 17s [id=la-terraform-55475]
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+Outputs:
+
+bucketname = [
+  "la-terraform-30307",
+  "la-terraform-55475",
+]
+
+
+
+
+
+
+
+
+
+outputs.tf:-
+-------------
+output "bucketname" {
+  value = "${aws_s3_bucket.tf_code.id}"
+}
+
+
+
+Update the Variables File:-
+Edit variables.tf.
+Add a new variable number_of_instances.
+Set the the default to 2.
+
+Update the Main File:-
+Update random_id and add a count.
+Set the value count to use the number_of_instances variable.
+Update aws_s3_bucket and add a count.
+Update random_id.tf_bucket_id.dec so it iterates through the count. Update the Name tag so that tf_bucket is appended with the count index plus one.
+
+Update the Outputs File:-
+Update the bucketname output value to use the join function so that it returns a comma delimited list of bucket names.
+
+Deploy the Infrastructure:-
+Initialize Terraform.
+Validate the files.
+Deploy the S3 buckets.

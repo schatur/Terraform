@@ -1,0 +1,117 @@
+Using Terraform to Create a RandomID and S3 Buckets
+
+Create the Main file:-
+Create the main.tf Terraform file.
+Add a provider, aws.
+Set the region to use a variable called aws_region.
+Add a random_id resource and name it tf_bucket_id.
+Set the byte_length to 2.
+
+Add a resource, aws_s3_bucket, and name it tf_code.
+The bucket name will be set using a variable called project_name, followed by a -, and will use the dec attribute from tf_bucket_id.
+Set the acl to private.
+Set force_destroy to true.
+Create a tag with a name to tf_bucket.
+
+Create the Variables File:-
+Create the variables.tf Terraform file.
+Add a variable called aws_region.
+Set the default to us-east-1. Add a variable called project_name.
+Set the default to la-terraform.
+
+Create the outputs file:-
+Create the outputs.tf Terraform file.
+Add a output called bucketname.
+The value should be set to id, coming from tf_code.
+
+Deploy the infrastructure:-
+Initialize Terraform.
+Validate the files.
+Deploy the S3 bucket.
+
+
+
+
+vi main.tf
+
+provider "aws" {
+  access_key = ""
+  secret_key = ""
+  region     = "${var.aws_region}"
+}
+
+resource "random_id" "tf_bucket_id" {
+  byte_length = 2
+}
+
+resource "aws_s3_bucket" "tf_code" {
+
+  bucket        = "${var.project_name}-${random_id.tf_bucket_id.dec}"
+  acl           = "private"
+  force_destroy = "true"
+  tags = {
+    name = "tf_bucket"
+  }
+}
+
+
+vi variables.tf
+
+variable "aws_region" {
+  default = "us-east-1"
+}
+
+variable "project_name" {
+  default = "la-terraform"
+}
+
+
+
+vi outputs.tf
+
+output "bucketname" {
+  value = "${aws_s3_bucket.tf_code.id}"
+}
+
+
+
+$ terraform init
+
+Initializing the backend...
+
+Initializing provider plugins...
+- Checking for available provider plugins...
+- Downloading plugin for provider "aws" (hashicorp/aws) 2.65.0...
+- Downloading plugin for provider "random" (hashicorp/random) 2.2.1...
+
+Terraform has been successfully initialized!
+
+
+$ terraform validate
+Success! The configuration is valid.
+
+
+$ terraform plan -out tfplan
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+
+
+$ terraform apply "tfplan"
+random_id.tf_bucket_id: Creating...
+random_id.tf_bucket_id: Creation complete after 0s [id=9iw]
+aws_s3_bucket.tf_code: Creating...
+aws_s3_bucket.tf_code: Still creating... [10s elapsed]
+aws_s3_bucket.tf_code: Creation complete after 16s [id=la-terraform-63020]
+
+State path: terraform.tfstate
+
+Outputs:
+
+bucketname = la-terraform-63020
+
+
+
+arn:aws:s3:::la-terraform-63020
+
+
+
